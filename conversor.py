@@ -55,3 +55,6 @@ quadro.columnconfigure(1, weight=1)
 
 label_resultado = tk.Label(quadro, text="Resultado: ", font=("Segoe UI", 13, "bold"))
 label_resultado.grid(row=6, column=0, columnspan=2, pady=10)
+
+janela.mainloop()
+
