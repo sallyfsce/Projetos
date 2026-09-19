@@ -28,7 +28,15 @@ janela.title("Conversor de Unidades")
 janela.geometry("450x400")
 janela.resizable(False, False)
 
-quadro = tk.Frame(janela, padx=30, pady=20)
+janela.configure(bg="#f0f4f8")
+
+estilo = ttk.Style()
+estilo.theme_use("clam")
+estilo.configure("TLabel", background="#f0f4f8", font=("Segoe UI", 11))
+estilo.configure("TCombobox", font=("Segoe UI", 11))
+estilo.configure("TButton", font=("Segoe UI", 11, "bold"), padding=8)
+
+quadro = tk.Frame(janela, bg="#f0f4f8", padx=30, pady=20)
 quadro.pack(expand=True, fill="both")
 
 titulo = tk.Label(quadro, text="Conversor de Unidades", font=("Segoe UI", 16, "bold"))
@@ -53,7 +61,7 @@ entrada_valor.grid(row=4, column=1, pady=8, sticky="ew")
 
 quadro.columnconfigure(1, weight=1)
 
-label_resultado = tk.Label(quadro, text="Resultado: ", font=("Segoe UI", 13, "bold"))
+label_resultado = tk.Label(quadro, fg="#1a5276", text="Resultado: ", font=("Segoe UI", 13, "bold"))
 label_resultado.grid(row=6, column=0, columnspan=2, pady=10)
 
 def atualizar_unidades(event=None):
