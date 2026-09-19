@@ -56,5 +56,59 @@ quadro.columnconfigure(1, weight=1)
 label_resultado = tk.Label(quadro, text="Resultado: ", font=("Segoe UI", 13, "bold"))
 label_resultado.grid(row=6, column=0, columnspan=2, pady=10)
 
+def atualizar_unidades(event=None):
+    categoria = combo_categoria.get()
+
+    if categoria == "Temperatura":
+        opcoes = ["Celsius", "Fahrenheit", "Kelvin"]
+    else:
+        opcoes = list(unidades[categoria]["fatores"].keys())
+
+    combo_de["values"] = opcoes
+    combo_para["values"] = opcoes
+    combo_de.current(0)
+    combo_para.current(0)
+
+
+combo_categoria.bind("<<ComboboxSelected>>", atualizar_unidades)
+atualizar_unidades()
+
+
+def converter():
+    categoria = combo_categoria.get()
+    unidade_de = combo_de.get()
+    unidade_para = combo_para.get()
+
+    try:
+        valor = float(entrada_valor.get())
+    except ValueError:
+        label_resultado.config(text="Resultado: valor inválido")
+        return
+
+    if categoria == "Temperatura":
+        if unidade_de == "Fahrenheit":
+            celsius = (valor - 32) * 5 / 9
+        elif unidade_de == "Kelvin":
+            celsius = valor - 273.15
+        else:
+            celsius = valor
+
+        if unidade_para == "Fahrenheit":
+            resultado = celsius * 9 / 5 + 32
+        elif unidade_para == "Kelvin":
+            resultado = celsius + 273.15
+        else:
+            resultado = celsius
+    else:
+        fatores = unidades[categoria]["fatores"]
+        valor_em_base = valor * fatores[unidade_de]
+        resultado = valor_em_base / fatores[unidade_para]
+
+    label_resultado.config(text=f"Resultado: {resultado:.2f}")
+
+
+botao = ttk.Button(quadro, text="Converter", command=converter)
+botao.grid(row=5, column=0, columnspan=2, pady=(20, 10))
+
 janela.mainloop()
 
