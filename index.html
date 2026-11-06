@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Estação de Recarga EV — Sprint 4</title>
+<style>
+  :root { --verde:#0f7b5f; --verde-claro:#e3f5ef; --cinza:#f4f6f8; --texto:#1d2733; --borda:#d5dbe1; --erro:#b3261e; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: system-ui, Arial, sans-serif; background:var(--cinza); color:var(--texto); }
+  header { background:var(--verde); color:#fff; padding:16px 24px; }
+  header h1 { margin:0; font-size:22px; }
+  header p { margin:4px 0 0; font-size:13px; opacity:.9; }
+  nav { display:flex; gap:6px; padding:12px 24px 0; flex-wrap:wrap; }
+  nav button { border:1px solid var(--borda); background:#fff; padding:9px 16px; border-radius:8px 8px 0 0; cursor:pointer; font-size:14px; }
+  nav button.ativa { background:var(--verde); color:#fff; border-color:var(--verde); }
+  main { padding:0 24px 24px; }
+  section { display:none; background:#fff; border:1px solid var(--borda); border-radius:0 8px 8px 8px; padding:20px; }
+  section.ativa { display:block; }
+  h2 { margin-top:0; font-size:18px; }
+  .grade { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; }
+  label { font-size:13px; font-weight:600; display:block; margin-bottom:4px; }
+  input, select { width:100%; padding:9px; border:1px solid var(--borda); border-radius:6px; font-size:14px; }
+  button.acao { background:var(--verde); color:#fff; border:0; padding:10px 18px; border-radius:6px; cursor:pointer; font-size:14px; }
+  button.sec { background:#fff; color:var(--verde); border:1px solid var(--verde); padding:10px 18px; border-radius:6px; cursor:pointer; font-size:14px; }
+  .barra { display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; margin-bottom:14px; }
+  .barra > div { min-width:150px; }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th, td { padding:8px; border-bottom:1px solid var(--borda); text-align:left; }
+  th { background:var(--cinza); }
+  tr.destaque td { background:#fff6c7; }
+  .pico { background:#ffe3c2; color:#8a4b00; padding:2px 7px; border-radius:10px; font-size:11px; }
+  .aviso { padding:10px 14px; border-radius:6px; margin:12px 0; font-size:14px; background:var(--verde-claro); }
+  .aviso.erro { background:#fde7e5; color:var(--erro); }
+  .cartoes { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:12px; }
+  .cartao { background:var(--verde-claro); border-radius:8px; padding:14px; }
+  .cartao small { display:block; font-size:12px; color:#456; }
+  .cartao strong { font-size:22px; }
+  #integracao { margin:0 24px 24px; background:#101820; color:#b8f5dc; font-family:Consolas, monospace; font-size:13px; padding:12px 16px; border-radius:8px; }
+  #integracao b { color:#fff; }
+  pre { background:var(--cinza); padding:12px; border-radius:6px; overflow:auto; font-size:13px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>⚡ Sistema de Gerenciamento de Estação de Recarga</h1>
+  <p>Sprint 4 — Interface Web + Backend Python (Flask) · Estruturas de Dados e Algoritmos</p>
+</header>
+
+<nav id="abas">
+  <button data-aba="nova" class="ativa">Nova sessão</button>
+  <button data-aba="lista">Sessões</button>
+  <button data-aba="stats">Estatísticas</button>
+  <button data-aba="relatorio">Relatório final</button>
+  <button data-aba="complex">Complexidade</button>
+</nav>
+
+<main>
+
+  <!-- ===================== NOVA SESSÃO ===================== -->
+  <section id="nova" class="ativa">
+    <h2>Cadastrar sessão de recarga</h2>
+    <div class="grade">
+      <div><label>Nome do usuário</label><input id="usuario" placeholder="Ex.: Maria Souza"></div>
+      <div><label>Veículo (placa/modelo)</label><input id="veiculo" placeholder="Ex.: BYD Dolphin"></div>
+      <div><label>Tipo de usuário</label>
+        <select id="tipo_usuario">
+          <option value="Comum">Comum (R$ 1,30/kWh)</option>
+          <option value="Premium">Premium (R$ 0,90/kWh)</option>
+        </select></div>
+      <div><label>Tipo de carregador</label>
+        <select id="tipo_carregador">
+          <option value="AC (lento)">AC (lento)</option>
+          <option value="DC (rápido)">DC (rápido)</option>
+        </select></div>
+      <div><label>Tempo de recarga (min)</label><input id="tempo" type="number" min="1" placeholder="Ex.: 45"></div>
+      <div><label>Energia consumida (kWh)</label><input id="energia" placeholder="Ex.: 32,5"></div>
+      <div><label>Hora da recarga (0–23) — opcional</label><input id="hora" type="number" min="0" max="23" placeholder="Vazio = hora atual"></div>
+    </div>
+    <p style="font-size:13px">Horário de pico: das 18h às 22h (+25% na tarifa).</p>
+    <button class="acao" id="btnCadastrar">Registrar sessão</button>
+    <button class="sec" id="btnExemplo">Carregar 8 sessões de exemplo</button>
+    <button class="sec" id="btnLimpar">Limpar tudo</button>
+    <div id="msgCadastro"></div>
+  </section>
+
+  <!-- ===================== LISTA / BUSCA / ORDENAÇÃO ===================== -->
+  <section id="lista">
+    <h2>Sessões armazenadas</h2>
+    <div class="barra">
+      <div><label>Buscar sessão por ID</label><input id="idBusca" type="number" min="1" placeholder="Ex.: 5"></div>
+      <button class="acao" id="btnBuscar">Buscar</button>
+      <div><label>Ordenar por</label>
+        <select id="campoOrdem">
+          <option value="id">ID</option>
+          <option value="energia">Energia (kWh)</option>
+          <option value="custo">Custo (R$)</option>
+          <option value="tempo">Tempo (min)</option>
+        </select></div>
+      <div><label>Sentido</label>
+        <select id="sentidoOrdem">
+          <option value="asc">Crescente</option>
+          <option value="desc">Decrescente</option>
+        </select></div>
+      <button class="acao" id="btnOrdenar">Ordenar (Bubble Sort)</button>
+      <button class="sec" id="btnListar">Listar na ordem de cadastro</button>
+    </div>
+    <div id="msgLista"></div>
+    <div id="tabela"></div>
+  </section>
+
+  <!-- ===================== ESTATÍSTICAS ===================== -->
+  <section id="stats">
+    <h2>Estatísticas da estação</h2>
+    <button class="acao" id="btnStats">Atualizar estatísticas</button>
+    <div id="conteudoStats" style="margin-top:14px"></div>
+  </section>
+
+  <!-- ===================== RELATÓRIO ===================== -->
+  <section id="relatorio">
+    <h2>Relatório final</h2>
+    <button class="acao" id="btnRelatorio">Gerar relatório</button>
+    <div id="conteudoRelatorio" style="margin-top:14px"></div>
+  </section>
+
+  <!-- ===================== COMPLEXIDADE ===================== -->
+  <section id="complex">
+    <h2>Análise de complexidade (medida no código Python)</h2>
+    <p style="font-size:14px">O backend roda a <b>Busca Sequencial</b> e o <b>Bubble Sort</b> no pior caso, com
+      tamanhos crescentes, e conta as comparações reais.</p>
+    <button class="acao" id="btnComplex">Executar análise</button>
+    <div id="conteudoComplex" style="margin-top:14px"></div>
+  </section>
+
+</main>
+
+<!-- Painel que mostra a comunicação Interface -> Backend Python -> Interface -->
+<div id="integracao">Integração: aguardando a primeira requisição ao backend Python…</div>
+
+<script>
+/* ------------------------------------------------------------------
+   JAVASCRIPT — só cuida da TELA. Toda a lógica (cálculo, busca,
+   ordenação) acontece no Python. O JavaScript apenas:
+     1) lê o que a pessoa digitou,
+     2) manda para o Python (fetch),
+     3) mostra a resposta na tela.
+------------------------------------------------------------------- */
+
+// Atalho para pegar um elemento da página pelo id
+const $ = (id) => document.getElementById(id);
+
+// Função que conversa com o backend Python.
+// metodo: "GET", "POST" ou "DELETE" | url: endereço da rota | corpo: dados a enviar
+async function chamarApi(metodo, url, corpo) {
+  const inicio = performance.now();
+  const opcoes = { method: metodo, headers: { "Content-Type": "application/json" } };
+  if (corpo) opcoes.body = JSON.stringify(corpo);
+
+  const resposta = await fetch(url, opcoes);      // envia ao Python
+  const dados = await resposta.json();            // recebe a resposta do Python
+  const ms = Math.round(performance.now() - inicio);
+
+  // Mostra no rodapé o caminho percorrido
+  $("integracao").innerHTML =
+    `<b>Interface</b> → <b>${metodo} ${url}</b> → <b>Python (sistema.py)</b> → ` +
+    `JSON (status ${resposta.status}, ${ms} ms) → <b>Interface</b>`;
+
+  if (!resposta.ok) throw new Error(dados.erro || "Erro no servidor");
+  return dados;
+}
+
+// Mostra uma mensagem (verde = ok, vermelha = erro) dentro de um elemento
+function mostrarMsg(idElemento, texto, erro) {
+  $(idElemento).innerHTML = `<div class="aviso ${erro ? "erro" : ""}">${texto}</div>`;
+}
+
+const moeda = (v) => "R$ " + Number(v).toFixed(2).replace(".", ",");
+
+// Desenha a tabela de sessões. idDestaque = linha a ser destacada (busca)
+function desenharTabela(lista, idDestaque) {
+  if (lista.length === 0) { $("tabela").innerHTML = "<p>Nenhuma sessão cadastrada ainda.</p>"; return; }
+  let linhas = "";
+  for (const s of lista) {
+    linhas += `<tr class="${s.id === idDestaque ? "destaque" : ""}">
+      <td>${s.id}</td><td>${s.usuario}</td><td>${s.tipo_usuario}</td><td>${s.veiculo}</td>
+      <td>${s.tipo_carregador}</td><td>${s.tempo} min</td><td>${s.energia.toFixed(2)} kWh</td>
+      <td>${moeda(s.tarifa)}${s.horario_pico ? ' <span class="pico">pico</span>' : ""}</td>
+      <td>${moeda(s.custo)}</td><td>${s.data_hora}</td></tr>`;
+  }
+  $("tabela").innerHTML = `<table><tr><th>ID</th><th>Usuário</th><th>Tipo</th><th>Veículo</th>
+    <th>Carregador</th><th>Tempo</th><th>Energia</th><th>Tarifa/kWh</th><th>Custo</th><th>Data/hora</th></tr>${linhas}</table>`;
+}
+
+// ---------- Troca de abas ----------
+document.querySelectorAll("#abas button").forEach((botao) => {
+  botao.onclick = () => {
+    document.querySelectorAll("#abas button, section").forEach((e) => e.classList.remove("ativa"));
+    botao.classList.add("ativa");
+    $(botao.dataset.aba).classList.add("ativa");
+    if (botao.dataset.aba === "lista") listar();
+  };
+});
+
+// ---------- Nova sessão ----------
+$("btnCadastrar").onclick = async () => {
+  try {
+    const nova = await chamarApi("POST", "/api/sessoes", {
+      usuario: $("usuario").value, veiculo: $("veiculo").value,
+      tipo_usuario: $("tipo_usuario").value, tipo_carregador: $("tipo_carregador").value,
+      tempo: $("tempo").value, energia: $("energia").value, hora: $("hora").value,
+    });
+    mostrarMsg("msgCadastro",
+      `✅ Sessão <b>#${nova.id}</b> registrada. Tarifa aplicada: ${moeda(nova.tarifa)}/kWh` +
+      `${nova.horario_pico ? " (horário de pico)" : ""} · <b>Custo: ${moeda(nova.custo)}</b>`);
+  } catch (e) { mostrarMsg("msgCadastro", "⚠ " + e.message, true); }
+};
+
+$("btnExemplo").onclick = async () => {
+  const r = await chamarApi("POST", "/api/exemplo");
+  mostrarMsg("msgCadastro", `✅ Exemplos carregados. Total de sessões: ${r.total}`);
+};
+
+$("btnLimpar").onclick = async () => {
+  await chamarApi("DELETE", "/api/sessoes");
+  mostrarMsg("msgCadastro", "Todas as sessões foram removidas.");
+};
+
+// ---------- Listar / Buscar / Ordenar ----------
+async function listar() {
+  const lista = await chamarApi("GET", "/api/sessoes");
+  $("msgLista").innerHTML = `<div class="aviso">Total: ${lista.length} sessão(ões) na ordem de cadastro.</div>`;
+  desenharTabela(lista);
+}
+$("btnListar").onclick = listar;
+
+$("btnBuscar").onclick = async () => {
+  const id = $("idBusca").value;
+  if (!id) { mostrarMsg("msgLista", "Digite um ID para buscar.", true); return; }
+  const r = await chamarApi("GET", "/api/buscar/" + id);
+  if (r.sessao) {
+    mostrarMsg("msgLista", `🔎 Busca Sequencial: ID ${id} encontrado na posição ${r.indice} após ` +
+      `<b>${r.comparacoes} comparação(ões)</b> (lista com ${r.total} sessões).`);
+    const lista = await fetch("/api/sessoes").then((x) => x.json());
+    desenharTabela(lista, r.sessao.id);
+  } else {
+    mostrarMsg("msgLista", `Nenhuma sessão com ID ${id}. A busca percorreu a lista inteira: ` +
+      `<b>${r.comparacoes} comparações</b> (pior caso).`, true);
+  }
+};
+
+$("btnOrdenar").onclick = async () => {
+  const campo = $("campoOrdem").value;
+  const ordem = $("sentidoOrdem").value;
+  const r = await chamarApi("GET", `/api/ordenar?campo=${campo}&ordem=${ordem}`);
+  mostrarMsg("msgLista", `↕ Bubble Sort por <b>${campo}</b>: <b>${r.comparacoes} comparações</b> e ` +
+    `<b>${r.trocas} trocas</b> para ${r.sessoes.length} sessões.`);
+  desenharTabela(r.sessoes);
+};
+
+// ---------- Estatísticas ----------
+$("btnStats").onclick = async () => {
+  const e = await chamarApi("GET", "/api/estatisticas");
+  if (!e) { $("conteudoStats").innerHTML = "<p>Nenhuma sessão cadastrada ainda.</p>"; return; }
+  $("conteudoStats").innerHTML = `<div class="cartoes">
+    <div class="cartao"><small>Sessões realizadas</small><strong>${e.total_sessoes}</strong></div>
+    <div class="cartao"><small>Energia fornecida</small><strong>${e.energia_total.toFixed(2)} kWh</strong></div>
+    <div class="cartao"><small>Faturamento</small><strong>${moeda(e.faturamento)}</strong></div>
+    <div class="cartao"><small>Ticket médio</small><strong>${moeda(e.ticket_medio)}</strong></div>
+    <div class="cartao"><small>Maior consumo</small><strong>${e.maior_consumo.toFixed(2)} kWh</strong></div>
+    <div class="cartao"><small>Menor consumo</small><strong>${e.menor_consumo.toFixed(2)} kWh</strong></div>
+    <div class="cartao"><small>Sessões em horário de pico</small><strong>${e.sessoes_em_pico}</strong></div></div>`;
+};
+
+// ---------- Relatório ----------
+function tabelaGrupo(titulo, grupo) {
+  let linhas = "";
+  for (const nome in grupo) {
+    linhas += `<tr><td>${nome}</td><td>${grupo[nome].sessoes}</td>
+      <td>${grupo[nome].energia.toFixed(2)} kWh</td><td>${moeda(grupo[nome].faturamento)}</td></tr>`;
+  }
+  return `<h3>${titulo}</h3><table><tr><th>Categoria</th><th>Sessões</th><th>Energia</th><th>Faturamento</th></tr>${linhas}</table>`;
+}
+
+$("btnRelatorio").onclick = async () => {
+  const r = await chamarApi("GET", "/api/relatorio");
+  if (!r) { $("conteudoRelatorio").innerHTML = "<p>Nenhuma sessão cadastrada ainda.</p>"; return; }
+  const m = r.sessao_mais_cara, e = r.resumo;
+  $("conteudoRelatorio").innerHTML =
+    `<div class="aviso"><b>Resumo:</b> ${e.total_sessoes} sessões · ${e.energia_total.toFixed(2)} kWh fornecidos ·
+      faturamento ${moeda(e.faturamento)} · ticket médio ${moeda(e.ticket_medio)} ·
+      ${e.sessoes_em_pico} sessão(ões) em horário de pico.</div>
+     <div class="aviso"><b>Sessão mais cara:</b> #${m.id} — ${m.usuario} (${m.veiculo}) — ${moeda(m.custo)}</div>` +
+    tabelaGrupo("Por tipo de usuário", r.por_tipo_usuario) +
+    tabelaGrupo("Por tipo de carregador", r.por_tipo_carregador);
+};
+
+// ---------- Complexidade ----------
+$("btnComplex").onclick = async () => {
+  const dados = await chamarApi("GET", "/api/complexidade");
+  let linhas = "", anterior = null;
+  for (const d of dados) {
+    const fb = anterior ? (d.comparacoes_busca / anterior.comparacoes_busca).toFixed(1) + "×" : "—";
+    const fo = anterior ? (d.comparacoes_bubble / anterior.comparacoes_bubble).toFixed(1) + "×" : "—";
+    linhas += `<tr><td>${d.n}</td><td>${d.comparacoes_busca}</td><td>${fb}</td>
+      <td>${d.comparacoes_bubble}</td><td>${fo}</td></tr>`;
+    anterior = d;
+  }
+  $("conteudoComplex").innerHTML =
+    `<table><tr><th>n (sessões)</th><th>Busca: comparações</th><th>Crescimento</th>
+      <th>Bubble Sort: comparações</th><th>Crescimento</th></tr>${linhas}</table>
+     <div class="aviso">Ao <b>dobrar n</b>: a busca faz ~2× mais comparações (<b>O(n)</b>) e o Bubble Sort
+     faz ~4× mais (<b>O(n²)</b>, pois ≈ n·(n−1)/2).</div>`;
+};
+</script>
+</body>
+</html>
